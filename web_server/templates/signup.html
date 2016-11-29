@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>网站注册</title>
+
+   
+    <link href="http://getbootstrap.com/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link href="http://getbootstrap.com/examples/jumbotron-narrow/jumbotron-narrow.css" rel="stylesheet">
+    <link href="../static/css/signup.css" rel="stylesheet">
+    <script src="../static/js/jquery-1.11.2.js"></script>
+    <script src="../static/js/signUp.js"></script>
+   
+  </head>
+
+  <body>
+
+    <div class="container">
+      <div class="header">
+        <nav>
+          <ul class="nav nav-pills pull-right">
+            <li role="presentation" class="active"><a href="/show_login">登录</a></li>
+          </ul>
+        </nav>
+        <h3 class="text-muted">重要热带病传播入侵媒介及病原体生物学特性研究平台</h3>
+      </div>
+
+      <div class="jumbotron">
+        <h2>填写信息</h2>
+        <form class="form-signin">
+        <input type="name" name="user_name" id="user_name" class="form-control" placeholder="用户名" required autofocus>
+        <input type="name" name="name" id="name" class="form-control" placeholder="姓名" required autofocus>
+        <input type="email" name="email" id="email" class="form-control" placeholder="邮箱" required autofocus>
+        <input type="tel" name="tel" id="tel" class="form-control" placeholder="电话" required autofocus>
+        <input type="password" name="password" id="password" class="form-control" placeholder="密码" required>
+        <p>用户类型选择</p>
+        <select name="user_type", class="selectpicker">
+            <option value="0">实验室用户</option>
+            <option value="1">注册用户</option>
+        </select>
+        </br>
+        <p>团队选择</p>
+        <select name="team_name">
+            {% for x in team_list %}
+            <option value={{x}}>{{x}}</option>
+            {% endfor %}
+        </select>
+        
+        <button id="btnSignUp" class="btn btn-lg btn-primary btn-block" type="button">注册</button>
+      </form>
+      </div>
+    </div>
+  </body>
+</html>

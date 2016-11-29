@@ -1,9 +1,20 @@
+#coding=utf8
+import sys
 import json
+import uuid
+import datetime
 import xml.etree.ElementTree
 from flask import Flask
 from flask import request
+from flask import render_template
+from flask import redirect
+
+from flask_login import LoginManager, login_user, login_required, current_user, UserMixin, logout_user
 from flaskext.mysql import MySQL
 from werkzeug import generate_password_hash, check_password_hash
+
+type_mapping = {0: u'实验室用户', 1: u"注册用户", 2: u"管理员用户", 3: u"超级管理员用户"}
+bool_mapping = {0: u'否', 1: u"是"}
 
 app = Flask(__name__)
 
@@ -16,43 +27,318 @@ with open('config/mysql.json') as f:
     app.config['MYSQL_DATABASE_HOST'] = conf['host']
 mysql.init_app(app)
 
+# flask_login
+login_manager = LoginManager()
+login_manager.login_view = "show_login"
+login_manager.login_message = u"请先登录再访问！"
+login_manager.session_protection = 'strong'
+login_manager.init_app(app)
+
+# user models
+class User(UserMixin):
+    def is_authenticated(self):
+        return True
+
+    def is_actice(self):
+        return True
+
+    def is_anonymous(self):
+        return False
+
+    def get_id(self):
+        return "1"
+
+@login_manager.user_loader
+def load_user(user_id):
+    user = User()
+    return user
+
+@app.route('/login', methods=['POST'])
+def login():
+    print request.form
+    user_name = request.form.get('user_name', '')
+    password = request.form.get('password', '')
+    if user_name and password:
+        conn = mysql.connect()
+        cursor = conn.cursor()
+
+        sql = "SELECT * FROM user WHERE user_name=%s" 
+        cursor.execute(sql, (user_name))
+        ans = cursor.fetchone()
+        print ans
+        if not ans:
+            return 'fail'
+        hashed_pw = ans[2]
+        user_type = ans[5]
+        if check_password_hash(hashed_pw, password):
+            print user_type
+            if user_type == 3:
+                user = User()
+                login_user(user)
+                return 'super_admin'
+            elif user_type == 2:
+                session_id = unicode(uuid.uuid4())
+                now_time = datetime.datetime.now()
+                sql = "INSERT INTO sessions VALUES (%s, %s)" 
+                try:
+                    cursor.execute(sql, (session_id, now_time))
+                except Exception as e:
+                    print e.message
+                    return 'error'
+                data = cursor.fetchall()
+                # excute successfully
+                if len(data) == 0:
+                    conn.commit()
+                else:
+                    return 'error'
+                return 'admin' + session_id 
+            else:
+                return 'permission denied'
+        else:
+            return 'fail'
+
+@app.route('/logout', methods=['GET', 'POST'])
+@login_required
+def logout():
+    logout_user()
+    return "logout page"
+
+@app.route('/user_manage')
+@login_required
+def user_manage():
+    conn = mysql.connect()
+    cursor = conn.cursor()
+
+    sql = "SELECT * FROM user WHERE is_checked=0"
+    cursor.execute(sql)
+    user_list = cursor.fetchall()
+    user_list =  [[x[0], x[1], x[3], x[4], type_mapping[x[5]], x[6]] for x in user_list]
+    return render_template('user_manage.html', user_list=user_list)
+
+@app.route('/user_checked', methods=['POST'])
+@login_required
+def user_checked():
+    checked_user =  request.form.keys()
+    print checked_user
+    conn = mysql.connect()
+    cursor = conn.cursor()
+    for user_name in checked_user:
+        sql = "UPDATE user SET is_checked=1 WHERE user_name=%s" 
+        try:
+            cursor.execute(sql, (user_name))
+        except Exception as e:
+            print e.message
+            return 'error'
+        data = cursor.fetchall()
+        # excute successfully
+        if len(data) == 0:
+            conn.commit()
+        else:
+            return 'error'
+    return 'success'
+
+@app.route('/user_delete')
+@login_required
+def user_delete():
+    conn = mysql.connect()
+    cursor = conn.cursor()
+
+    sql = "SELECT * FROM user WHERE type <> 3"
+    cursor.execute(sql)
+    user_list = cursor.fetchall()
+    user_list =  [[x[0], x[1], x[3], x[4], type_mapping[x[5]], x[6], bool_mapping[x[7]]] for x in user_list]
+    return render_template('user_delete.html', user_list=user_list)
+
+@app.route('/remove_user', methods=['POST'])
+@login_required
+def remove_user():
+    checked_user =  request.form.keys()
+    conn = mysql.connect()
+    cursor = conn.cursor()
+    for user_name in checked_user:
+        sql = "DELETE FROM user WHERE user_name=%s" 
+        try:
+            cursor.execute(sql, (user_name))
+        except Exception as e:
+            print e.message
+            return 'error'
+        data = cursor.fetchall()
+        # excute successfully
+        if len(data) == 0:
+            conn.commit()
+        else:
+            return 'error'
+    return 'success'
+
+@app.route('/show_signup')
+def show_signup():
+    conn = mysql.connect()
+    cursor = conn.cursor()
+
+    sql = "SELECT * FROM team"
+    cursor.execute(sql)
+    team_list = cursor.fetchall()
+    team_list =  [x[0] for x in team_list]
+    
+    return render_template('signup.html', team_list=team_list)
+
+@app.route('/show_login')
+def show_login():
+    return render_template('login.html')
+
 @app.route('/signup', methods=['POST'])
 def signup():
-    try:
-        user_id = request.args.get('user_id', '')
-        user_name = request.args.get('user_name', '')
-        password = request.args.get('password', '')
-        email = request.args.get('email', '')
-        tel = request.args.get('tel', '')
-        user_type = request.args.get('user_type', '')
-        team = request.args.get('team', '')
-        if (user_id and user_name and password and email
-                and tel and user_type and team):
-            try:
-                user_id = int(user_id)
-                user_type = int(user_type)
-                team = int(team)
-            except Exception as e:
-                print e.message
-                return 'input illegal'
-            password = generate_password_hash(password)
-            conn = mysql.connect()
-            cursor = conn.cursor()
-            sql = "INSERT INTO user VALUES (%s, %s, %s, %s, %s, %s, %s)"
-            cursor.execute(sql, (user_id, user_name, password, email, tel, user_type, team))
-            data = cursor.fetchall()
-
-            # execute successfully
-            if len(data) == 0:
-                conn.commit()
-                return 'success'
-            else:
-                return 'insert error'
+    print request.form
+    user_name = request.form.get('user_name', '')
+    name = request.form.get('name', '')
+    password = request.form.get('password', '')
+    email = request.form.get('email', '')
+    tel = request.form.get('tel', '')
+    user_type = request.form.get('user_type', '')
+    team_name = request.form.get('team_name', '')
+    if (user_name and name and password and email 
+            and tel and user_type and team_name):
+        try:
+            user_type = int(user_type)
+        except Exception as e:
+            print e.message
+            return 'input illegal'
+        password = generate_password_hash(password)
+        is_checked = 0
+        conn = mysql.connect()
+        cursor = conn.cursor()
+        sql = "INSERT INTO user VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+        #try:
+        cursor.execute(sql, (user_name, name, password, email, tel, user_type, team_name, is_checked))
+        """
+        except Exception as e:
+            print e.message
+            return 'user_name exists'
+        """
+        data = cursor.fetchall()
+        
+        # excute successfully
+        if len(data) == 0:
+            conn.commit()
+            return 'success'
         else:
-            return 'input error'
+            return 'insert error'
+    else:
+        return 'input error'
+
+@app.route('/show_team_create')
+@login_required
+def show_team_create():
+    return render_template('team_create.html')
+
+@app.route('/team_create', methods=['POST'])
+def team_create():
+    print request.form
+    team_name = request.form.get('team_name', '')
+    team_intro = request.form.get('team_intro', '')
+    if team_name and team_intro: 
+        conn = mysql.connect()
+        cursor = conn.cursor()
+        sql = "INSERT INTO team (team_name, intro) VALUES (%s, %s)"
+        try:
+            cursor.execute(sql, (team_name, team_intro))
+        except Exception as e:
+            print e.message
+            return 'team_name exists'
+        data = cursor.fetchall()
+        
+        # excute successfully
+        if len(data) == 0:
+            conn.commit()
+            return 'success'
+        else:
+            return 'insert error'
+    else:
+        return 'input error'
+
+@app.route('/show_team_manage')
+@login_required
+def show_team_manage():
+    conn = mysql.connect()
+    cursor = conn.cursor()
+
+    sql = "SELECT * FROM team"
+    cursor.execute(sql)
+    team_list = cursor.fetchall()
+    team_list =  [[x[0], x[1]] for x in team_list]
+
+    return render_template('team_manage.html', team_list=team_list)
+
+@app.route('/team_manage', methods=['POST'])
+@login_required
+def team_manage():
+    team_name =  request.form.get('name', u'')
+    conn = mysql.connect()
+    cursor = conn.cursor()
+
+    sql = "SELECT team_name, intro FROM team WHERE team_name=%s"
+    cursor.execute(sql, (team_name))
+    team = cursor.fetchone()
+    team = {'team_name': team[0], 'team_intro': team[1]}
+    return render_template('team_edit.html', team = team)
+
+@app.route('/team_edit', methods=['POST'])
+@login_required
+def team_edit():
+    team_name =  request.form.get('team_name', '')
+    team_intro =  request.form.get('team_intro', '')
+    conn = mysql.connect()
+    cursor = conn.cursor()
+    sql = "UPDATE team SET intro=%s WHERE team_name=%s" 
+    try:
+        cursor.execute(sql, (team_intro, team_name))
     except Exception as e:
         print e.message
-        return 'user_id has existed'
+        return 'error'
+    data = cursor.fetchall()
+    # excute successfully
+    if len(data) == 0:
+        conn.commit()
+        return 'success'
+    else:
+        return 'error'
+
+@app.route('/team_delete', methods=['POST'])
+@login_required
+def team_delete():
+    team_name =  request.form.get('team_name', '')
+    team_intro =  request.form.get('team_intro', '')
+    conn = mysql.connect()
+    cursor = conn.cursor()
+    
+    # delete all user belong to the team
+    sql = "DELETE FROM user WHERE team_name=%s" 
+    try:
+        cursor.execute(sql, (team_name))
+    except Exception as e:
+        print e.message
+        return 'error'
+    data = cursor.fetchall()
+    # excute successfully
+    if len(data) == 0:
+        conn.commit()
+    else:
+        return 'error'
+
+    sql = "DELETE FROM team WHERE team_name=%s" 
+    try:
+        cursor.execute(sql, (team_name))
+    except Exception as e:
+        print e.message
+        return 'error'
+    data = cursor.fetchall()
+    # excute successfully
+    if len(data) == 0:
+        conn.commit()
+    else:
+        return 'error'
+    return 'success'
+
 
 
 @app.route('/get_project', methods = ['GET'])
@@ -358,4 +644,8 @@ def set_academic():
     return 'successful'
 
 if __name__ == '__main__':
+    reload(sys)
+    sys.setdefaultencoding('utf8')
+    app.secret_key = '1842390kfjlafjlalf;kjkouqr'
+
     app.run(host='0.0.0.0')
