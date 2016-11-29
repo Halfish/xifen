@@ -1,12 +1,16 @@
 <?php
 session_start();
 if (isset($_GET['logout'])) {
+  $_SESSION = array();
+  if (isset($_COOKIE[session_name()])) {
+    setCookie(session_name(), '', time()-3600, '/');
+  }
   session_destroy();
   Header("Location: index.html");
   exit;
 }
 
-$debug = true;
+$debug = false;
 
 if (!$debug && !isset($_POST['id'])) {
   Header("Location: index.html");
