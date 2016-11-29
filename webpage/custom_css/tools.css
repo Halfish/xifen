@@ -1,0 +1,16 @@
+
+.container {
+    margin-bottom: 20px;
+}
+
+.sidenav li {
+    list-style-type: none;
+}
+
+.sidenav .blog-nav-item {
+    color: black;
+}
+
+.sidenav .blog-nav-item:hover {
+    color: blue;
+}

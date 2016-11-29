@@ -1,0 +1,16 @@
+form#academic_form {
+    margin-top: 40px;
+}
+
+div.form-group-1 div.col-sm-10 {
+    width: 30%;
+    padding-left: 0;
+}
+
+div.form-group-2 {
+    margin: 30px 0 30px 0;
+}
+
+div.form-group-2 div.col-sm-10 {
+    padding-left: 0;
+}

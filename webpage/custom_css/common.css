@@ -1,0 +1,78 @@
+/*--------------------------sidenav STARTS--------------------------*/
+.sidenav {
+    font-size:18px;
+    padding:15px;
+    border: solid 1px #ccc;
+}
+/*--------------------------sidenav ENDS--------------------------*/
+
+/*--------------------------project body STARTS-------------------*/
+.project_sub {
+    font-size:18px;
+    border:solid 1px #ccc;
+    padding:0 15px;
+    margin-bottom:10px;
+}
+
+.project_sub p{
+    text-align: justify;
+    text-justify: inter-ideograph;
+    font-size: 16px;
+    text-indent: 1em;
+    line-height: 25px;
+    margin: 10px;
+}
+
+.project_sub li{
+    font-size: 16px;
+    margin-top:10px;
+    margin-bottom:10px;
+}
+
+.project_sub_title {
+    border-bottom:solid 1px #ccc;
+    padding:5px;
+}
+
+.project_body {
+    font-size:18px;
+    border:solid 1px #ccc;
+    padding:30px 0;
+}
+
+.project_body h3 {
+    margin-bottom:20px;
+}
+
+.project_body img {
+    width: 304px;
+    margin:20px;
+}
+/*--------------------------project body ENDS---------------------*/
+
+/*--------------------------progress body STARTS------------------*/
+.progress_body {
+    font-size:18px;
+    border:solid 1px #ccc;
+    padding:20px 30px 40px;
+    margin-bottom:10px;
+}
+
+.progress_body h4 {
+  padding:0 30px;
+  text-align:center;
+}
+
+.progress_body h5 {
+  text-align:center;
+}
+
+.progress_body img {
+  width: 80%;
+  margin:40px 0;
+}
+
+.progress_body p {
+  padding-right:30px;
+}
+/*--------------------------progress body ENDS--------------------*/

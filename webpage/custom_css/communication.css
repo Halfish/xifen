@@ -1,0 +1,11 @@
+.conference {
+    font-size:18px;
+    border:solid 1px #ccc;
+    padding:0 15px;
+    margin-bottom:10px;
+}
+
+.conference_title {
+    border-bottom:solid 1px #ccc;
+    padding:5px;
+}
