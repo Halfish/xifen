@@ -14,7 +14,7 @@ $(function(){
                     window.location = '/user_manage';
                 }
                 else if (response.length >= 5 && response.substr(0,5) == 'admin'){
-                    $.redirect(apache_ip + '/hw/login_check.php', {id:response.substr(5,response.length)});
+                    $.redirect(apache_ip + '/xifen/webpage/login_check.php', {id:response.substr(5,response.length)});
                 }
                 else if (response == 'permission denied'){
                     alert('用户无权限');
